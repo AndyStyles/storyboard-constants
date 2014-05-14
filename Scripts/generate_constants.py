@@ -3,10 +3,11 @@
 import sys, os
 import xml.etree.ElementTree as et
 
-PREFIX = "jbw"
+PREFIX = "JBW"
 
 segueIdentifiers = {}
 controllerIdentifiers = {}
+cellIdentifiers = {}
 
 def addSegueIdentifier(identifier):
 	key = identifier[0].upper() + identifier[1:]
@@ -21,6 +22,13 @@ def addControllerIdentifier(identifier):
         key = PREFIX.upper() + key
     
     controllerIdentifiers[key] = identifier
+
+def addCellIdentifier(identifier):
+    key = identifier[0].upper() + identifier[1:]
+    if not key.startswith(PREFIX.upper()):
+        key = PREFIX.upper() + key
+    
+    cellIdentifiers[key] = identifier
 
 def process_storyboard(file):
     tree = et.parse(file)
@@ -37,6 +45,19 @@ def process_storyboard(file):
         if controllerIdentifier == None:
             continue
         addControllerIdentifier(controllerIdentifier)
+    
+    for tableViewCell in root.iter("tableViewCell"):
+        tableViewCellIdentifier = tableViewCell.get("reuseIdentifier")
+        if tableViewCellIdentifier == None:
+            continue
+        addCellIdentifier(tableViewCellIdentifier)
+    
+    for collectionViewCell in root.iter("collectionViewCell"):
+        collectionViewCellIdentifier = collectionViewCell.get("reuseIdentifier")
+        if collectionViewCellIdentifier == None:
+            continue
+        addCellIdentifier(collectionViewCellIdentifier)
+
 
 def writeHeader(file, identifiers):
     constants = sorted(identifiers.keys())
@@ -65,6 +86,11 @@ with open(sys.argv[1], "w+") as header:
     
     writeHeader(header, controllerIdentifiers)
     
+    header.write("\n")
+    header.write("/* Cell identifier constants */\n")
+    
+    writeHeader(header, cellIdentifiers)
+    
     header.close()
 
 with open(sys.argv[2], "w+") as implementation:
@@ -74,6 +100,9 @@ with open(sys.argv[2], "w+") as implementation:
     implementation.write("\n")
     
     writeImplementation(implementation, controllerIdentifiers)
+    implementation.write("\n")
+    
+    writeImplementation(implementation, cellIdentifiers)
     
     implementation.close()
 
